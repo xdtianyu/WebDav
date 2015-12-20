@@ -10,7 +10,7 @@ Grab via gradle
 
 ```
 dependencies {
-    compile 'org.xdty.webdav:webdav0.0.1'
+    compile 'org.xdty.webdav:webdav:0.0.1'
 }
 ```
 
