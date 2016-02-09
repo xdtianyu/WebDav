@@ -1,55 +1,23 @@
-apply plugin: 'com.android.library'
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-ext {
-    bintrayRepo = 'maven'
-    bintrayName = 'webdav'
-
-    publishedGroupId = 'org.xdty.webdav'
-    libraryName = 'WebDav'
-    artifact = 'webdav'
-
-    libraryDescription = 'A Webdav library for Android.'
-
-    siteUrl = 'https://github.com/xdtianyu/Webdav'
-    gitUrl = 'https://github.com/xdtianyu/Webdav'
-
-    libraryVersion = '0.0.1'
-
-    developerId = 'xdtianyu'
-    developerName = 'xdtianyu'
-    developerEmail = 'xdtianyu@gmail.com'
-
-    licenseName = 'The Apache Software License, Version 2.0'
-    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-    allLicenses = ["Apache-2.0"]
-}
-
-android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.2"
-
-    defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionCode 1
-        versionName "0.0.1"
+buildscript {
+    repositories {
+        jcenter()
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.0.0-beta2'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
-dependencies {
-    compile 'com.squareup.okhttp:okhttp:2.6.0'
-    compile ('org.simpleframework:simple-xml:2.7.1') {
-        exclude module: 'stax'
-        exclude module: 'stax-api'
-        exclude module: 'xpp3'
+allprojects {
+    repositories {
+        jcenter()
     }
 }
 
-apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
-apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
