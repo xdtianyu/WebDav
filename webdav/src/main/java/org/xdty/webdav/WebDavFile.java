@@ -108,7 +108,7 @@ public class WebDavFile {
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
                 String path = url.getProtocol() + "://" + url.getHost() + response.getHref();
 
-                if (path.equalsIgnoreCase(url.toString())) {
+                if (isMatch(path, url.toString())) {
                     continue;
                 }
 
@@ -127,6 +127,16 @@ public class WebDavFile {
         }
 
         return list.toArray(new WebDavFile[list.size()]);
+    }
+
+    private boolean isMatch(String path, String url) {
+        try {
+            return URLDecoder.decode(path, "utf-8")
+                    .equalsIgnoreCase(URLDecoder.decode(url, "utf-8"));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public String getCanon() {
