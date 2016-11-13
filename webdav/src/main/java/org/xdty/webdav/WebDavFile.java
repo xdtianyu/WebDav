@@ -105,10 +105,12 @@ public class WebDavFile {
         Serializer serializer = new Persister();
         try {
             MultiStatus multiStatus = serializer.read(MultiStatus.class, s);
+            String parent = URLDecoder.decode(url.toString(), "utf-8");
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
-                String path = url.getProtocol() + "://" + url.getHost() + response.getHref();
+                String path = url.getProtocol() + "://" + url.getHost() +
+                        URLDecoder.decode(response.getHref(), "utf-8");
 
-                if (isMatch(path, url.toString())) {
+                if (path.equalsIgnoreCase(parent)) {
                     continue;
                 }
 
@@ -119,7 +121,7 @@ public class WebDavFile {
                 webDavFile.setLastModified(0);
                 webDavFile.setSize(prop.getGetcontentlength());
                 webDavFile.setIsDirectory(prop.getResourcetype().getCollection() != null);
-                webDavFile.setParent(url.toString());
+                webDavFile.setParent(parent);
                 list.add(webDavFile);
             }
         } catch (Exception e) {
@@ -127,16 +129,6 @@ public class WebDavFile {
         }
 
         return list.toArray(new WebDavFile[list.size()]);
-    }
-
-    private boolean isMatch(String path, String url) {
-        try {
-            return URLDecoder.decode(path, "utf-8")
-                    .equalsIgnoreCase(URLDecoder.decode(url, "utf-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return false;
     }
 
     public String getCanon() {

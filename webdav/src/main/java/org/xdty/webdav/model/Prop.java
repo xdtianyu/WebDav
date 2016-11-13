@@ -13,7 +13,7 @@ public class Prop {
     @Element(required = false)
     protected String getcontentlanguage;
     @Element(required = false)
-    protected int getcontentlength;
+    protected long getcontentlength;
     @Element(required = false)
     protected String getcontenttype;
     @Element(required = false)
@@ -53,11 +53,11 @@ public class Prop {
         this.getcontentlanguage = value;
     }
 
-    public int getGetcontentlength() {
+    public long getGetcontentlength() {
         return getcontentlength;
     }
 
-    public void setGetcontentlength(int value) {
+    public void setGetcontentlength(long value) {
         this.getcontentlength = value;
     }
 
