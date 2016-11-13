@@ -105,10 +105,10 @@ public class WebDavFile {
         Serializer serializer = new Persister();
         try {
             MultiStatus multiStatus = serializer.read(MultiStatus.class, s);
-            String parent = URLDecoder.decode(url.toString(), "utf-8");
+            String parent = URLDecoder.decode(url.toString().replace("+", "%2B"), "utf-8");
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
                 String path = url.getProtocol() + "://" + url.getHost() +
-                        URLDecoder.decode(response.getHref(), "utf-8");
+                        URLDecoder.decode(response.getHref().replace("+", "%2B"), "utf-8");
 
                 if (path.equalsIgnoreCase(parent)) {
                     continue;
