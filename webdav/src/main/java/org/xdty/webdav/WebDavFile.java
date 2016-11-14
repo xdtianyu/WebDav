@@ -8,7 +8,6 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -40,6 +39,7 @@ public class WebDavFile {
     private long size;
     private boolean isDirectory = true;
     private String parent = "";
+    private String urlName = "";
 
     private OkHttpClient okHttpClient;
 
@@ -186,17 +186,15 @@ public class WebDavFile {
     }
 
     public String getName() {
-        try {
-            return URLDecoder.decode(getURLName(), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
         return getURLName();
     }
 
     public String getURLName() {
-        return (parent.isEmpty() ? url.getFile() : url.toString().replace(parent, "")).
-                replace("/", "");
+        if (urlName.isEmpty()) {
+            urlName = (parent.isEmpty() ? url.getFile() : url.toString().replace(parent, "")).
+                    replace("/", "");
+        }
+        return urlName;
     }
 
     public String getHost() {
