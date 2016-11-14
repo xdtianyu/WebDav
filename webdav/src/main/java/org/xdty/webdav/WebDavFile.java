@@ -1,12 +1,5 @@
 package org.xdty.webdav;
 
-import com.squareup.okhttp.Credentials;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
-
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
 import org.xdty.webdav.model.MultiStatus;
@@ -22,6 +15,13 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import okhttp3.Credentials;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class WebDavFile {
 
     public final static String TAG = WebDavFile.class.getSimpleName();
@@ -30,6 +30,17 @@ public class WebDavFile {
             "<a:propfind xmlns:a=\"DAV:\">\n" +
             "<a:prop><a:resourcetype/></a:prop>\n" +
             "</a:propfind>";
+    private static final String[] REPLACEMENT = new String[Character.MAX_VALUE + 1];
+
+    static {
+        // substitute
+        REPLACEMENT['á'] = "a";
+        // remove
+        REPLACEMENT['-'] = "";
+        // expand
+        REPLACEMENT['æ'] = "ae";
+    }
+
     protected URL url;
     OkHttpClient okHttpClient = new OkHttpClient();
     private String canon;
@@ -45,8 +56,14 @@ public class WebDavFile {
 
     public URL getUrl() {
         try {
-            return new URL(
-                    url.toString().replace("dav://", "http://").replace("davs://", "https://"));
+            return new URL(url.toString()
+                    .replace("dav://", "http://")
+                    .replace("davs://", "https://")
+                    .replace("+", "%2B")
+                    .replace("?", "%3F")
+                    .replace("#", "%23")
+                    .replace("&", "%26")
+            );
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
