@@ -1,5 +1,7 @@
 package org.xdty.webdav;
 
+import android.net.Uri;
+
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;
 import org.xdty.webdav.model.MultiStatus;
@@ -8,11 +10,9 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +31,9 @@ public class WebDavFile {
             "<a:propfind xmlns:a=\"DAV:\">\n" +
             "<a:prop><a:resourcetype/></a:prop>\n" +
             "</a:propfind>";
+
+    //private final static String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
+    private final static String ALLOWED_URI_CHARS = "*-_.,:!()/~'";
 
     private URL url;
     private URL httpUrl;
@@ -57,7 +60,7 @@ public class WebDavFile {
         }
 
         try {
-            String file = URLEncoder.encode(url.getFile(), "utf-8");
+            String file = Uri.encode(url.getFile(), ALLOWED_URI_CHARS);
             switch (url.getProtocol()) {
                 case "dav":
                     httpUrl = new URL("http", url.getHost(), url.getPort(), file);
@@ -68,7 +71,7 @@ public class WebDavFile {
                     httpUrl = new URL("https", url.getHost(), port, file);
                     break;
             }
-        } catch (MalformedURLException | UnsupportedEncodingException e) {
+        } catch (MalformedURLException e) {
             e.printStackTrace();
         }
         return httpUrl;
