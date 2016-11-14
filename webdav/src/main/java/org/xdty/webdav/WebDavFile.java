@@ -8,9 +8,11 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,17 +57,18 @@ public class WebDavFile {
         }
 
         try {
+            String file = URLEncoder.encode(url.getFile(), "utf-8");
             switch (url.getProtocol()) {
                 case "dav":
-                    httpUrl = new URL("http", url.getHost(), url.getPort(), url.getFile());
+                    httpUrl = new URL("http", url.getHost(), url.getPort(), file);
                     break;
                 case "davs":
                     int port = url.getPort();
                     port = (port == -1 || port == 80) ? 443 : port;
-                    httpUrl = new URL("https", url.getHost(), port, url.getFile());
+                    httpUrl = new URL("https", url.getHost(), port, file);
                     break;
             }
-        } catch (MalformedURLException e) {
+        } catch (MalformedURLException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         return httpUrl;
@@ -126,6 +129,7 @@ public class WebDavFile {
             String parent = URLDecoder.decode(url.toString().replace("+", "%2B"), "utf-8");
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
                 String path = url.getProtocol() + "://" + url.getHost() +
+                        (url.getPort() == -1 ? "" : ":" + url.getPort()) +
                         URLDecoder.decode(response.getHref().replace("+", "%2B"), "utf-8");
 
                 if (path.equalsIgnoreCase(parent)) {
