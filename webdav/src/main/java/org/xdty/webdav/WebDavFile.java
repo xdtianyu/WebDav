@@ -30,19 +30,10 @@ public class WebDavFile {
             "<a:propfind xmlns:a=\"DAV:\">\n" +
             "<a:prop><a:resourcetype/></a:prop>\n" +
             "</a:propfind>";
-    private static final String[] REPLACEMENT = new String[Character.MAX_VALUE + 1];
 
-    static {
-        // substitute
-        REPLACEMENT['á'] = "a";
-        // remove
-        REPLACEMENT['-'] = "";
-        // expand
-        REPLACEMENT['æ'] = "ae";
-    }
+    private URL url;
+    private URL httpUrl;
 
-    protected URL url;
-    OkHttpClient okHttpClient = new OkHttpClient();
     private String canon;
     private long createTime;
     private long lastModified;
@@ -50,24 +41,34 @@ public class WebDavFile {
     private boolean isDirectory = true;
     private String parent = "";
 
+    private OkHttpClient okHttpClient;
+
     public WebDavFile(String url) throws MalformedURLException {
         this.url = new URL(null, url, Handler.DAV_HANDLER);
+        okHttpClient = OkHttp.getInstance().client();
     }
 
     public URL getUrl() {
+
+        if (httpUrl != null) {
+            return httpUrl;
+        }
+
         try {
-            return new URL(url.toString()
-                    .replace("dav://", "http://")
-                    .replace("davs://", "https://")
-                    .replace("+", "%2B")
-                    .replace("?", "%3F")
-                    .replace("#", "%23")
-                    .replace("&", "%26")
-            );
+            switch (url.getProtocol()) {
+                case "dav":
+                    httpUrl = new URL("http", url.getHost(), url.getPort(), url.getFile());
+                    break;
+                case "davs":
+                    int port = url.getPort();
+                    port = (port == -1 || port == 80) ? 443 : port;
+                    httpUrl = new URL("https", url.getHost(), port, url.getFile());
+                    break;
+            }
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-        return null;
+        return httpUrl;
     }
 
     public String getPath() {
