@@ -8,10 +8,11 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,16 +32,9 @@ public class WebDavFile {
             "<a:prop><a:resourcetype/></a:prop>\n" +
             "</a:propfind>";
 
-    private final static String DAV_SCHEME = "dav://";
-    private final static String DAVS_SCHEME = "davs://";
+    private URL url;
+    private String httpUrl;
 
-    private final static String HTTP_SCHEME = "http://";
-    private final static String HTTPS_SCHEME = "https://";
-
-    //private final static String ALLOWED_URI_CHARS = "@#&=*+-_.,:!?()/~'%";
-    private final static String ALLOWED_URI_CHARS = "*-_.,:!()/~'";
-    private URI mUri;
-    private String httpUrl = "";
     private String canon;
     private long createTime;
     private long lastModified;
@@ -51,23 +45,28 @@ public class WebDavFile {
 
     private OkHttpClient okHttpClient;
 
-    public WebDavFile(String uri) throws URISyntaxException {
-        this.mUri = new URI(uri);
+    public WebDavFile(String url) throws MalformedURLException {
+        this.url = new URL(null, url, Handler.DAV_HANDLER);
         okHttpClient = OkHttp.getInstance().client();
     }
 
     public String getUrl() {
-
-        if (httpUrl.isEmpty()) {
-            httpUrl = mUri.toString()
-                    .replace(DAV_SCHEME, HTTP_SCHEME)
-                    .replace(DAVS_SCHEME, HTTPS_SCHEME);
+        if (httpUrl == null) {
+            String raw = url.toString().replace("davs://", "https://").replace("dav://", "http://");
+            try {
+                httpUrl = URLEncoder.encode(raw, "UTF-8")
+                        .replaceAll("\\+", "%20")
+                        .replaceAll("%3A", ":")
+                        .replaceAll("%2F", "/");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
         }
         return httpUrl;
     }
 
     public String getPath() {
-        return mUri.toString();
+        return url.toString();
     }
 
     public WebDavFile[] listFiles() throws MalformedURLException {
@@ -76,7 +75,7 @@ public class WebDavFile {
                 .url(getUrl())
                 .method("PROPFIND", RequestBody.create(MediaType.parse("text/plain"), DIR));
 
-        WebDavAuth.Auth auth = WebDavAuth.getAuth(mUri.toString());
+        WebDavAuth.Auth auth = WebDavAuth.getAuth(url.toString());
         if (auth != null) {
             request.header("Authorization", Credentials.basic(auth.getUser(), auth.getPass()));
         }
@@ -96,7 +95,7 @@ public class WebDavFile {
         Request.Builder request = new Request.Builder()
                 .url(getUrl());
 
-        WebDavAuth.Auth auth = WebDavAuth.getAuth(mUri.toString());
+        WebDavAuth.Auth auth = WebDavAuth.getAuth(url.toString());
 
         if (auth != null) {
             request.header("Authorization", Credentials.basic(auth.getUser(), auth.getPass()));
@@ -118,10 +117,9 @@ public class WebDavFile {
         Serializer serializer = new Persister();
         try {
             MultiStatus multiStatus = serializer.read(MultiStatus.class, s);
-            String parent = URLDecoder.decode(mUri.toString().replace("+", "%2B"), "utf-8");
+            String parent = URLDecoder.decode(url.toString().replace("+", "%2B"), "utf-8");
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
-                String path = mUri.getScheme() + "://" + getHost() +
-                        (mUri.getPort() == -1 ? "" : ":" + mUri.getPort()) +
+                String path = url.getProtocol() + "://" + url.getHost() +
                         URLDecoder.decode(response.getHref().replace("+", "%2B"), "utf-8");
 
                 if (path.equalsIgnoreCase(parent)) {
@@ -187,14 +185,14 @@ public class WebDavFile {
 
     public String getURLName() {
         if (urlName.isEmpty()) {
-            urlName = (parent.isEmpty() ? mUri.getPath() : mUri.toString().replace(parent, "")).
+            urlName = (parent.isEmpty() ? url.getFile() : url.toString().replace(parent, "")).
                     replace("/", "");
         }
         return urlName;
     }
 
     public String getHost() {
-        return mUri.getHost();
+        return url.getHost();
     }
 
     public boolean canRead() {
