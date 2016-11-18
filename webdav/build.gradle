@@ -13,8 +13,8 @@ ext {
     siteUrl = 'https://github.com/xdtianyu/Webdav'
     gitUrl = 'https://github.com/xdtianyu/Webdav'
 
-    libraryVersionCode = 10
-    libraryVersion = '0.0.10'
+    libraryVersionCode = 11
+    libraryVersion = '0.1.1'
 
     developerId = 'xdtianyu'
     developerName = 'xdtianyu'
@@ -45,11 +45,12 @@ android {
 
 dependencies {
     compile 'com.squareup.okhttp3:okhttp:3.4.2'
-    compile ('com.squareup.retrofit:converter-simplexml:1.9.0') {
+    compile('com.squareup.retrofit:converter-simplexml:1.9.0') {
         exclude group: 'xpp3', module: 'xpp3'
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'stax', module: 'stax'
     }
+    testCompile 'junit:junit:4.12'
 }
 
 apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'

@@ -187,7 +187,7 @@ public class WebDavFile {
 
     public String getURLName() {
         if (urlName.isEmpty()) {
-            urlName = (parent.isEmpty() ? mUri.getFragment() : mUri.toString().replace(parent, "")).
+            urlName = (parent.isEmpty() ? mUri.getPath() : mUri.toString().replace(parent, "")).
                     replace("/", "");
         }
         return urlName;
