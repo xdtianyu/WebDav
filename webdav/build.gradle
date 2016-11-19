@@ -13,8 +13,8 @@ ext {
     siteUrl = 'https://github.com/xdtianyu/Webdav'
     gitUrl = 'https://github.com/xdtianyu/Webdav'
 
-    libraryVersionCode = 12
-    libraryVersion = '0.1.2'
+    libraryVersionCode = 13
+    libraryVersion = '0.1.3'
 
     developerId = 'xdtianyu'
     developerName = 'xdtianyu'
@@ -50,6 +50,11 @@ dependencies {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'stax', module: 'stax'
     }
+    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    compile 'com.google.code.gson:gson:2.7'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.3.0'
+
     testCompile 'junit:junit:4.12'
 }
 

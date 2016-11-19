@@ -1,4 +1,4 @@
-package org.xdty.webdav;
+package org.xdty.http;
 
 import java.io.IOException;
 import java.net.URL;
@@ -7,7 +7,7 @@ import java.net.URLStreamHandler;
 
 public class Handler extends URLStreamHandler {
 
-    static final URLStreamHandler DAV_HANDLER = new Handler();
+    public static final URLStreamHandler HANDLER = new Handler();
 
     protected int getDefaultPort() {
         return 80;

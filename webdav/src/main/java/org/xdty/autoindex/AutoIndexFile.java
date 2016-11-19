@@ -1,39 +1,28 @@
-package org.xdty.webdav;
+package org.xdty.autoindex;
 
-import org.simpleframework.xml.Serializer;
-import org.simpleframework.xml.core.Persister;
+import org.xdty.autoindex.data.NginxService;
+import org.xdty.autoindex.module.IndexFile;
 import org.xdty.http.Handler;
 import org.xdty.http.HttpAuth;
 import org.xdty.http.OkHttp;
-import org.xdty.webdav.model.MultiStatus;
-import org.xdty.webdav.model.Prop;
-import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 import okhttp3.Credentials;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-public class WebDavFile {
-
-    public final static String TAG = WebDavFile.class.getSimpleName();
-
-    private final static String DIR = "<?xml version=\"1.0\"?>\n" +
-            "<a:propfind xmlns:a=\"DAV:\">\n" +
-            "<a:prop><a:resourcetype/></a:prop>\n" +
-            "</a:propfind>";
+public class AutoIndexFile {
 
     private URL url;
     private String httpUrl;
@@ -46,16 +35,25 @@ public class WebDavFile {
     private String parent = "";
     private String urlName = "";
 
-    private OkHttpClient okHttpClient;
+    private String mAuth;
 
-    public WebDavFile(String url) throws MalformedURLException {
+    private OkHttpClient mOkHttpClient;
+    private NginxService mNginxService;
+
+    private List<AutoIndexFile> children = new ArrayList<>();
+
+    public AutoIndexFile(String url) throws MalformedURLException {
         this.url = new URL(null, url, Handler.HANDLER);
-        okHttpClient = OkHttp.getInstance().client();
+        mOkHttpClient = OkHttp.getInstance().client();
+
+        mAuth = HttpAuth.Auth.basic(url);
     }
 
     public String getUrl() {
         if (httpUrl == null) {
-            String raw = url.toString().replace("davs://", "https://").replace("dav://", "http://");
+            String raw = url.toString()
+                    .replace("inedxs://", "https://")
+                    .replace("inedx://", "http://");
             try {
                 httpUrl = URLEncoder.encode(raw, "UTF-8")
                         .replaceAll("\\+", "%20")
@@ -72,26 +70,26 @@ public class WebDavFile {
         return url.toString();
     }
 
-    public WebDavFile[] listFiles() throws MalformedURLException {
+    public List<AutoIndexFile> listFiles() throws MalformedURLException {
 
-        Request.Builder request = new Request.Builder()
-                .url(getUrl())
-                .method("PROPFIND", RequestBody.create(MediaType.parse("text/plain"), DIR));
-
-        HttpAuth.Auth auth = HttpAuth.getAuth(url.toString());
-        if (auth != null) {
-            request.header("Authorization", Credentials.basic(auth.getUser(), auth.getPass()));
-        }
-
+        List<AutoIndexFile> autoIndexFiles = new ArrayList<>();
         try {
-            Response response = okHttpClient.newCall(request.build()).execute();
-            String s = response.body().string();
-            return parseDir(s);
-        } catch (IOException | XmlPullParserException | IllegalArgumentException e) {
+            List<IndexFile> files = mNginxService.list(mAuth, getName()).execute().body();
+
+            for (IndexFile file : files) {
+                AutoIndexFile autoIndexFile = new AutoIndexFile(getPath() + file.getName());
+                autoIndexFile.setNginxService(mNginxService);
+                autoIndexFile.setParent(getPath());
+                autoIndexFile.setIsDirectory(file.getType() == IndexFile.Type.DIRECTORY);
+                autoIndexFile.setSize(file.getSize());
+                autoIndexFiles.add(autoIndexFile);
+            }
+
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return null;
+        return autoIndexFiles;
     }
 
     public InputStream getInputStream() {
@@ -105,45 +103,12 @@ public class WebDavFile {
         }
 
         try {
-            Response response = okHttpClient.newCall(request.build()).execute();
+            Response response = mOkHttpClient.newCall(request.build()).execute();
             return response.body().byteStream();
         } catch (IOException | IllegalArgumentException e) {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private WebDavFile[] parseDir(String s) throws XmlPullParserException, IOException {
-
-        List<WebDavFile> list = new ArrayList<>();
-
-        Serializer serializer = new Persister();
-        try {
-            MultiStatus multiStatus = serializer.read(MultiStatus.class, s);
-            String parent = url.toString();
-            for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
-                String path = url.getProtocol() + "://" + url.getHost() +
-                        URLDecoder.decode(response.getHref().replace("+", "%2B"), "utf-8");
-
-                if (path.equalsIgnoreCase(parent)) {
-                    continue;
-                }
-
-                WebDavFile webDavFile = new WebDavFile(path);
-                Prop prop = response.getPropstat().getProp();
-                webDavFile.setCanon(prop.getDisplayname());
-                webDavFile.setCreateTime(0);
-                webDavFile.setLastModified(0);
-                webDavFile.setSize(prop.getGetcontentlength());
-                webDavFile.setIsDirectory(prop.getResourcetype().getCollection() != null);
-                webDavFile.setParent(parent);
-                list.add(webDavFile);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return list.toArray(new WebDavFile[list.size()]);
     }
 
     public String getCanon() {
@@ -221,4 +186,28 @@ public class WebDavFile {
     public void setIsDirectory(boolean isDirectory) {
         this.isDirectory = isDirectory;
     }
+
+    private void setNginxService(NginxService service) {
+        mNginxService = service;
+    }
+
+    public class Factory {
+        public AutoIndexFile create(String uri) {
+            try {
+                AutoIndexFile file = new AutoIndexFile(uri);
+                Retrofit retrofit = new Retrofit.Builder()
+                        .baseUrl(file.getUrl())
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .client(mOkHttpClient)
+                        .build();
+                NginxService service = retrofit.create(NginxService.class);
+                file.setNginxService(service);
+                return file;
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
 }
