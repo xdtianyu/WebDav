@@ -40,12 +40,15 @@ public class AutoIndexFile {
     private OkHttpClient mOkHttpClient;
     private NginxService mNginxService;
 
+    public AutoIndexFile() {
+    }
+
     public AutoIndexFile(String url) throws MalformedURLException {
         this.url = new URL(null, url, Handler.HANDLER);
         mOkHttpClient = OkHttp.getInstance().client();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(getUrl())
+                .baseUrl("http://nginx.org/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .client(mOkHttpClient)
                 .build();
@@ -64,8 +67,8 @@ public class AutoIndexFile {
     public String getUrl() {
         if (httpUrl == null) {
             String raw = url.toString()
-                    .replace("inedxs://", "https://")
-                    .replace("inedx://", "http://");
+                    .replace("indexs://", "https://")
+                    .replace("index://", "http://");
             try {
                 httpUrl = URLEncoder.encode(raw, "UTF-8")
                         .replaceAll("\\+", "%20")
@@ -86,16 +89,26 @@ public class AutoIndexFile {
 
         List<AutoIndexFile> autoIndexFiles = new ArrayList<>();
         try {
-            List<IndexFile> files = mNginxService.list(mAuth, getName()).execute().body();
+            List<IndexFile> files = mNginxService.list(mAuth, getUrl())
+                    .execute()
+                    .body();
 
-            for (IndexFile file : files) {
-                AutoIndexFile autoIndexFile = new AutoIndexFile(getPath() + file.getName(),
-                        mNginxService);
-                autoIndexFile.setNginxService(mNginxService);
-                autoIndexFile.setParent(getPath());
-                autoIndexFile.setIsDirectory(file.getType() == IndexFile.Type.DIRECTORY);
-                autoIndexFile.setSize(file.getSize());
-                autoIndexFiles.add(autoIndexFile);
+            String path = getPath();
+            if (!path.endsWith("/")) {
+                path += "/";
+            }
+
+            if (files != null) {
+                for (IndexFile file : files) {
+
+                    AutoIndexFile autoIndexFile = new AutoIndexFile(path + file.getName(),
+                            mNginxService);
+                    autoIndexFile.setNginxService(mNginxService);
+                    autoIndexFile.setParent(getPath());
+                    autoIndexFile.setIsDirectory(file.getType() == IndexFile.Type.DIRECTORY);
+                    autoIndexFile.setSize(file.getSize());
+                    autoIndexFiles.add(autoIndexFile);
+                }
             }
 
         } catch (IOException e) {
