@@ -1,6 +1,8 @@
 package org.xdty.autoindex;
 
-import org.xdty.autoindex.data.NginxService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.xdty.autoindex.module.IndexFile;
 import org.xdty.http.Handler;
 import org.xdty.http.HttpAuth;
@@ -19,11 +21,10 @@ import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class AutoIndexFile {
 
+    private final static Gson gson = new Gson();
     private URL url;
     private String httpUrl;
 
@@ -38,7 +39,6 @@ public class AutoIndexFile {
     private String mAuth;
 
     private OkHttpClient mOkHttpClient;
-    private NginxService mNginxService;
 
     public AutoIndexFile() {
     }
@@ -46,21 +46,6 @@ public class AutoIndexFile {
     public AutoIndexFile(String url) throws MalformedURLException {
         this.url = new URL(null, url, Handler.HANDLER);
         mOkHttpClient = OkHttp.getInstance().client();
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://nginx.org/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(mOkHttpClient)
-                .build();
-        mNginxService = retrofit.create(NginxService.class);
-
-        mAuth = HttpAuth.Auth.basic(url);
-    }
-
-    private AutoIndexFile(String url, NginxService service) throws MalformedURLException {
-        this.url = new URL(null, url, Handler.HANDLER);
-        mOkHttpClient = OkHttp.getInstance().client();
-        mNginxService = service;
         mAuth = HttpAuth.Auth.basic(url);
     }
 
@@ -88,30 +73,37 @@ public class AutoIndexFile {
     public List<AutoIndexFile> listFiles() throws MalformedURLException {
 
         List<AutoIndexFile> autoIndexFiles = new ArrayList<>();
+
+        Request.Builder request = new Request.Builder()
+                .url(getUrl());
+
+        HttpAuth.Auth auth = HttpAuth.getAuth(url.toString());
+        if (auth != null) {
+            request.header("Authorization", Credentials.basic(auth.getUser(), auth.getPass()));
+        }
+
         try {
-            List<IndexFile> files = mNginxService.list(mAuth, getUrl())
-                    .execute()
-                    .body();
+            Response response = mOkHttpClient.newCall(request.build()).execute();
+            String s = response.body().string();
 
             String path = getPath();
             if (!path.endsWith("/")) {
                 path += "/";
             }
 
+            List<IndexFile> files = gson.fromJson(s, new TypeToken<List<IndexFile>>() {}.getType());
+
             if (files != null) {
                 for (IndexFile file : files) {
 
-                    AutoIndexFile autoIndexFile = new AutoIndexFile(path + file.getName(),
-                            mNginxService);
-                    autoIndexFile.setNginxService(mNginxService);
+                    AutoIndexFile autoIndexFile = new AutoIndexFile(path + file.getName());
                     autoIndexFile.setParent(getPath());
                     autoIndexFile.setIsDirectory(file.getType() == IndexFile.Type.DIRECTORY);
                     autoIndexFile.setSize(file.getSize());
                     autoIndexFiles.add(autoIndexFile);
                 }
             }
-
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -211,10 +203,6 @@ public class AutoIndexFile {
 
     public void setIsDirectory(boolean isDirectory) {
         this.isDirectory = isDirectory;
-    }
-
-    private void setNginxService(NginxService service) {
-        mNginxService = service;
     }
 
 }
