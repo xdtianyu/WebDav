@@ -40,12 +40,24 @@ public class AutoIndexFile {
     private OkHttpClient mOkHttpClient;
     private NginxService mNginxService;
 
-    private List<AutoIndexFile> children = new ArrayList<>();
-
     public AutoIndexFile(String url) throws MalformedURLException {
         this.url = new URL(null, url, Handler.HANDLER);
         mOkHttpClient = OkHttp.getInstance().client();
 
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(getUrl())
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(mOkHttpClient)
+                .build();
+        mNginxService = retrofit.create(NginxService.class);
+
+        mAuth = HttpAuth.Auth.basic(url);
+    }
+
+    private AutoIndexFile(String url, NginxService service) throws MalformedURLException {
+        this.url = new URL(null, url, Handler.HANDLER);
+        mOkHttpClient = OkHttp.getInstance().client();
+        mNginxService = service;
         mAuth = HttpAuth.Auth.basic(url);
     }
 
@@ -77,7 +89,8 @@ public class AutoIndexFile {
             List<IndexFile> files = mNginxService.list(mAuth, getName()).execute().body();
 
             for (IndexFile file : files) {
-                AutoIndexFile autoIndexFile = new AutoIndexFile(getPath() + file.getName());
+                AutoIndexFile autoIndexFile = new AutoIndexFile(getPath() + file.getName(),
+                        mNginxService);
                 autoIndexFile.setNginxService(mNginxService);
                 autoIndexFile.setParent(getPath());
                 autoIndexFile.setIsDirectory(file.getType() == IndexFile.Type.DIRECTORY);
@@ -189,25 +202,6 @@ public class AutoIndexFile {
 
     private void setNginxService(NginxService service) {
         mNginxService = service;
-    }
-
-    public class Factory {
-        public AutoIndexFile create(String uri) {
-            try {
-                AutoIndexFile file = new AutoIndexFile(uri);
-                Retrofit retrofit = new Retrofit.Builder()
-                        .baseUrl(file.getUrl())
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .client(mOkHttpClient)
-                        .build();
-                NginxService service = retrofit.create(NginxService.class);
-                file.setNginxService(service);
-                return file;
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
     }
 
 }
