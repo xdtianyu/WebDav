@@ -13,8 +13,8 @@ ext {
     siteUrl = 'https://github.com/xdtianyu/Webdav'
     gitUrl = 'https://github.com/xdtianyu/Webdav'
 
-    libraryVersionCode = 11
-    libraryVersion = '0.1.1'
+    libraryVersionCode = 12
+    libraryVersion = '0.1.2'
 
     developerId = 'xdtianyu'
     developerName = 'xdtianyu'
