@@ -123,6 +123,7 @@ public class WebDavFile {
             String parent = url.toString();
             for (org.xdty.webdav.model.Response response : multiStatus.getResponse()) {
                 String path = url.getProtocol() + "://" + url.getHost() +
+                        (url.getPort() != -1 ? ":" + url.getPort() : "") +
                         URLDecoder.decode(response.getHref().replace("+", "%2B"), "utf-8");
 
                 if (path.equalsIgnoreCase(parent)) {
