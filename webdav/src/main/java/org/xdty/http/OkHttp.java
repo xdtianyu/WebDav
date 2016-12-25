@@ -8,17 +8,23 @@ public class OkHttp {
     private OkHttpClient okHttpClient;
 
     private OkHttp() {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        okHttpClient = new OkHttpClient.Builder().addInterceptor(interceptor).build();
     }
 
     public static OkHttp getInstance() {
         return SingletonHelper.INSTANCE;
     }
 
+    public void setClient(OkHttpClient client) {
+        okHttpClient = client;
+    }
+
     public OkHttpClient client() {
+
+        if (okHttpClient == null) {
+            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+            okHttpClient = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+        }
         return okHttpClient;
     }
 
